@@ -1,43 +1,80 @@
-name: Build U-Boot
-
+name: Build MediaTek Firmware
+# Geneated by Gemini 3 Fast
+# 触发条件：手动触发
 on:
   workflow_dispatch:
     inputs:
-      device:
-        description: "Specify the device to build U-Boot for (e.g., mt7981-wr30u)"
+      soc:
+        description: '芯片型号 (例如: mt7981, mt7986)'
         required: true
-        default: "mt7981-wr30u"
-
-      uboot_version:
-        description: "Specify the U-Boot version to build (e.g., 20220606)"
+        default: 'mt7981'
+      board:
+        description: '开发板名称 (例如: 360t7, wr30u, redmi_ax6000)'
         required: true
-        default: "20220606"
+        default: '360t7'
+      uboot_dir:
+        description: 'U-Boot dir'
+        required: true
+        default: 'uboot-mtk-20230718-09eda825'
+      atf_dir:
+        description: 'ATF dir'
+        required: true
+        default: 'atf-20240117-bacca82a8'
+      multi_layout:
+        description: '多布局支持 MULTI_LAYOUT (0 或 1)'
+        required: false
+        default: '0'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # 如果包含子模块则递归检出
 
-    - name: Set up dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential gcc-arm-none-eabi bison flex libssl-dev
+      - name: 安装编译依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            crossbuild-essential-arm64 \
+            device-tree-compiler \
+            libssl-dev \
+            git \
+            python3 \
+            python3-setuptools \
+            bc \
+            bison \
+            flex \
+            swig \
+            gcc-aarch64-linux-gnu
 
-    - name: Configure U-Boot
-      run: |
-        cd uboot-mtk-${{ github.event.inputs.uboot_version }}
-        make ${{ github.event.inputs.device }}_defconfig
+      - name: 动态修改脚本变量
+        run: |
+          # 使用 sed 命令将用户输入的目录名写入 build.sh，替换掉脚本里硬编码的默认值
+          sed -i "s/^UBOOT_DIR=.*/UBOOT_DIR=${{ github.event.inputs.uboot_dir }}/" build.sh
+          sed -i "s/^ATF_DIR=.*/ATF_DIR=${{ github.event.inputs.atf_dir }}/" build.sh
+          chmod +x build.sh
+          
+          echo "Using UBOOT_DIR: ${{ github.event.inputs.uboot_dir }}"
+          echo "Using ATF_DIR: ${{ github.event.inputs.atf_dir }}"
 
-    - name: Build U-Boot
-      run: |
-        cd uboot-mtk-${{ github.event.inputs.uboot_version }}
-        make -j$(nproc)
+      - name: 执行编译脚本
+        env:
+          SOC: ${{ github.event.inputs.soc }}
+          BOARD: ${{ github.event.inputs.board }}
+          MULTI_LAYOUT: ${{ github.event.inputs.multi_layout }}
+        run: |
+          # 运行你的 build.sh
+          ./build.sh
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: uboot-${{ github.event.inputs.device }}
-        path: uboot-mtk-${{ github.event.inputs.uboot_version }}/
+      - name: 上传编译产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.soc }}-${{ github.event.inputs.board }}-binaries
+          path: |
+            output/*.bin
+            output/*.img
