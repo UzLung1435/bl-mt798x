@@ -22,23 +22,22 @@
 	};
 
 	mtd-layout {
-		layout@0 {
-			label = "default";
-			mtdids = "nmbm0=nmbm0";
-            mtdparts = "nmbm0:1024k(bl2),512k(u-boot-env),2048k(Factory),2048k(fip),73728k(ubi),36864k(plugin),1024k(config),512k(factory),7168k(log)";
-			boot_part = "ubi";
-			factory_part = "ubi";
-			sysupgrade_kernel_ubipart = "ubi";
-			sysupgrade_rootfs_ubipart = "ubi";
-			};
+        layout@0 {
+            label = "default";
+            mtdids = "spi-nand0=spi-nand0";
+            /* 使用 spi-nand0 命名 */
+            mtdparts = "spi-nand0:1024k(bl2),512k(u-boot-env),2048k(Factory),2048k(fip),73728k(ubi),36864k(plugin),1024k(config),512k(factory),7168k(log)";
+            boot_part = "ubi";
+            factory_part = "ubi";
+        };
 
-		layout@1 {
-			label = "ubootmod";
-			// mtd layout for ubootmod
-			mtdids = "nmbm0=nmbm0";
-			mtdparts = "nmbm0:1024k(bl2),512k(u-boot-env),2048k(factory),2048k(fip),108M(ubi),1M(stock-config),512k(stock-factory),4M(stock-log)";
-		};
-	};
+        layout@1 {
+            label = "ubootmod";
+            mtdids = "spi-nand0=spi-nand0";
+            /* 108M 几乎占满整个 128M flash */
+            mtdparts = "spi-nand0:1024k(bl2),512k(u-boot-env),2048k(Factory),2048k(fip),110592k(ubi),1024k(stock-config),512k(stock-factory),4096k(stock-log)";
+        };
+    };
 
 	gpio-keys {
 		compatible = "gpio-keys";
