@@ -1,0 +1,38 @@
+name: Build U-Boot
+
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: "Specify the device to build U-Boot for (e.g., mt7981-wr30u)"
+        required: true
+        default: "mt7981-wr30u"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential gcc-arm-none-eabi bison flex libssl-dev
+
+    - name: Configure U-Boot
+      run: |
+        cd uboot-mtk-20220606
+        make ${GITHUB_EVENT_INPUTS_DEVICE}_defconfig
+
+    - name: Build U-Boot
+      run: |
+        cd uboot-mtk-20220606
+        make -j$(nproc)
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: uboot-${{ github.event.inputs.device }}
+        path: uboot-mtk-20220606/u-boot.bin
