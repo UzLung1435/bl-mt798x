@@ -8,6 +8,11 @@ on:
         required: true
         default: "mt7981-wr30u"
 
+      uboot_version:
+        description: "Specify the U-Boot version to build (e.g., 20220606)"
+        required: true
+        default: "20220606"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,16 +28,16 @@ jobs:
 
     - name: Configure U-Boot
       run: |
-        cd uboot-mtk-20220606
-        make ${GITHUB_EVENT_INPUTS_DEVICE}_defconfig
+        cd uboot-mtk-${{ github.event.inputs.uboot_version }}
+        make ${{ github.event.inputs.device }}_defconfig
 
     - name: Build U-Boot
       run: |
-        cd uboot-mtk-20220606
+        cd uboot-mtk-${{ github.event.inputs.uboot_version }}
         make -j$(nproc)
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: uboot-${{ github.event.inputs.device }}
-        path: uboot-mtk-20220606/u-boot.bin
+        path: uboot-mtk-${{ github.event.inputs.uboot_version }}/
